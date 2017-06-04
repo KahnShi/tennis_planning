@@ -16,7 +16,6 @@ set(PACKAGE_DEPENDENCIES
   visualization_msgs
   tf
   aerial_robot_base
-  bspline_ros
 )
 
 
@@ -46,6 +45,7 @@ set(LINK_LIBS
 add_library(${PROJECT_NAME}
   src/HybridPlannar.cpp
   src/SnakeCommand.cpp
+  src/MotionPrimitives.cpp
   )
 target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
 

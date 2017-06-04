@@ -28,10 +28,11 @@
 
 /* local library */
 #include <aerial_robot_base/FlightNav.h>
-#include <bspline_ros/bsplineGenerate.h>
+#include <tennis_hybrid_plannar/MotionPrimitives.h>
 
 #include <iostream>
 using namespace Eigen;
+using namespace motion_primitives;
 
 namespace snake_command{
   class SnakeCommand
@@ -61,13 +62,15 @@ namespace snake_command{
 
     tf::TransformListener m_tf_listener;
 
-    /* spline */
-    bsplineGenerate *m_bspline_traj_ptr;
+    /* Trajectory */
     double m_traj_start_time;
     double m_traj_current_time;
-    double m_traj_bias_start_time;
-    double m_spline_segment_time;
     tf::Vector3 m_traj_track_i_term_accumulation;
+    MotionPrimitives *m_traj_primitive;
+    double m_traj_fixed_yaw;
+
+    /* tennis */
+    tf::Vector3 m_racket_1_pos;
 
     /* Publisher */
     ros::Publisher m_pub_flight_nav;
@@ -86,10 +89,7 @@ namespace snake_command{
     void directTrackGlobalTrajectory();
     void transformTrackGlobalTrajectory();
     inline tf::Vector3 vectorToVector3(std::vector<double> vec);
-    void getNextLink(tf::Vector3 &next_link, tf::Vector3 cur_link, double &joint_ang, double start_time);
-    void getNextLinkFromSpline(tf::Vector3 &next_link, tf::Vector3 cur_link, double link_length, double start_time);
-    void getPreviousLink(tf::Vector3 &prev_link, tf::Vector3 cur_link, double &joint_ang, double start_time);
-    void getPreviousLinkFromSpline(tf::Vector3 &prev_link, tf::Vector3 cur_link, double link_length, double start_time);
+    inline tf::Vector3 vector3dToVector3(Vector3d vec);
   };
 }
 

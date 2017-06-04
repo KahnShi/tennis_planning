@@ -3,6 +3,7 @@
 
 #include <ros/ros.h>
 #include <std_msgs/Empty.h>
+#include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Point32.h>
@@ -20,6 +21,8 @@
 #include <eigen3/Eigen/Geometry>
 #include <eigen3/Eigen/Eigenvalues>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 
 /* local library */
 #include <aerial_robot_base/FlightNav.h>
@@ -42,7 +45,7 @@ namespace hybrid_plannar{
     ros::NodeHandle m_nh, m_nhp;
     ros::Subscriber m_sub_snake_task_start_flag;
     ros::Subscriber m_sub_snake_odom;
-    ros::Subscriber m_sub_control_points;
+    ros::Subscriber m_sub_tennis_ball_odom;
 
     /* Publisher */
     ros::Publisher m_pub_snake_start_flag;
@@ -50,10 +53,12 @@ namespace hybrid_plannar{
     ros::Publisher m_pub_snake_land_flag;
     ros::Publisher m_pub_snake_joint_states;
     ros::Publisher m_pub_snake_flight_nav;
-    ros::Publisher m_pub_control_points_markers;
+    ros::Publisher m_pub_tennis_ball_markers;
+    ros::Publisher m_pub_snake_traj_path;
 
     /* Topic name */
     std::string m_sub_snake_odom_topic_name;
+    std::string m_sub_tennis_ball_odom_topic_name;
     std::string m_pub_snake_start_flag_topic_name;
     std::string m_pub_snake_takeoff_flag_topic_name;
     std::string m_pub_snake_land_flag_topic_name;
@@ -69,20 +74,23 @@ namespace hybrid_plannar{
     double *m_snake_joint_states_vel_ptr;
     double *m_snake_joint_states_ang_ptr;
     SnakeCommand *m_snake_command_ptr;
+    tf::TransformListener m_tf_listener;
 
-    /* bspline generator */
-    bool m_snake_traj_bspline_mode;
-    bsplineGenerate m_bspline_generator;
-    double m_spline_segment_time;
-    std::vector<geometry_msgs::Point32> m_control_point_vec;
+    /* Trajectory */
+    MotionPrimitives *m_traj_primitive_ptr;
+
+    /* Tennis */
+    nav_msgs::Odometry m_tennis_ball_odom;
+    nav_msgs::Odometry m_tennis_racket_1_odom;
 
     void snakeInitPose();
     void taskStartCallback(std_msgs::Empty msg);
     void snakeOdomCallback(const nav_msgs::OdometryConstPtr& msg);
-    void controlPointsCallback(const geometry_msgs::PolygonStampedConstPtr& msg);
+    void tennisBallOdomCallback(const nav_msgs::OdometryConstPtr& msg);
     bool generateTrajectory();
-    void splineInputParam();
-    void visualizeControlPoints();
+    void visualizeTennisBall();
+    bool getFesibleTrajectory();
+    void visualizeTrajectory();
   };
 }
 #endif
