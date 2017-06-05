@@ -111,6 +111,7 @@ namespace motion_primitives{
              + (*m_traj_param_y_ptr)[i] * (*m_traj_param_y_ptr)[j]
              + (*m_traj_param_z_ptr)[i] * (*m_traj_param_z_ptr)[j]);
       }
+    costs /= m_traj_period_time;
     return costs;
   }
 }
