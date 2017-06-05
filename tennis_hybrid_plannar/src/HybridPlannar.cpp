@@ -168,16 +168,13 @@ namespace hybrid_plannar
     m_tennis_racket_1_odom.pose.pose.position.x = transform.getOrigin().x();
     m_tennis_racket_1_odom.pose.pose.position.y = transform.getOrigin().y();
     m_tennis_racket_1_odom.pose.pose.position.z = transform.getOrigin().z();
-    m_tennis_racket_1_odom.pose.pose.orientation.x = transform.getRotation().getAxis().getX();
-    m_tennis_racket_1_odom.pose.pose.orientation.y = transform.getRotation().getAxis().getY();
-    m_tennis_racket_1_odom.pose.pose.orientation.z = transform.getRotation().getAxis().getZ();
-    m_tennis_racket_1_odom.pose.pose.orientation.w = transform.getRotation().getW();
+    tf::Quaternion q;
+    transform.getBasis().getRotation(q);
+    m_tennis_racket_1_odom.pose.pose.orientation.x = q.getX();
+    m_tennis_racket_1_odom.pose.pose.orientation.y = q.getY();
+    m_tennis_racket_1_odom.pose.pose.orientation.z = q.getZ();
+    m_tennis_racket_1_odom.pose.pose.orientation.w = q.getW();
     m_tennis_racket_1_odom.twist.twist = link_twist;
-    // todo: debug, rotation angle seems wrong
-    // std::cout << "q: " << m_tennis_racket_1_odom.pose.pose.orientation.x << ", "
-    //           << m_tennis_racket_1_odom.pose.pose.orientation.y << ", "
-    //           << m_tennis_racket_1_odom.pose.pose.orientation.z << ", "
-    //           << m_tennis_racket_1_odom.pose.pose.orientation.w << "\n";
   }
 
   void HybridPlannar::tennisBallOdomCallback(const nav_msgs::OdometryConstPtr& msg)
