@@ -28,6 +28,7 @@
 
 /* local library */
 #include <aerial_robot_base/FlightNav.h>
+#include <aerial_robot_base/DesireCoord.h>
 #include <tennis_hybrid_plannar/MotionPrimitives.h>
 
 #include <iostream>
@@ -61,6 +62,7 @@ namespace snake_command{
     std::string m_sub_base_link_odom_topic_name;
 
     tf::TransformListener m_tf_listener;
+    double m_cog_world_rpy[3];
 
     /* Trajectory */
     double m_traj_start_time;
@@ -80,16 +82,19 @@ namespace snake_command{
     ros::Subscriber m_sub_move_start_flag;
     ros::Subscriber m_sub_joint_states;
     ros::Subscriber m_sub_base_link_odom;
+    ros::Subscriber m_sub_cog_world_coord;
     ros::Timer m_timer;
 
     void moveStartFlagCallback(const std_msgs::Empty msg);
     void jointStatesCallback(const sensor_msgs::JointStateConstPtr& joints_msg);
     void baseLinkOdomCallback(const nav_msgs::OdometryConstPtr& odom_msg);
     void controlCallback(const ros::TimerEvent& e);
+    void cogWorldCoordCallback(const aerial_robot_base::DesireCoordConstPtr& coord_msg);
     void directTrackGlobalTrajectory();
     void transformTrackGlobalTrajectory();
     inline tf::Vector3 vectorToVector3(std::vector<double> vec);
     inline tf::Vector3 vector3dToVector3(Vector3d vec);
+    tf::Vector3 attitudeCvtWorldToCog(tf::Vector3 att_world);
   };
 }
 

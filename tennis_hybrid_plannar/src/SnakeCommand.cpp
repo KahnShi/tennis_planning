@@ -26,6 +26,7 @@ namespace snake_command{
     m_sub_move_start_flag = m_nh.subscribe<std_msgs::Empty>(m_sub_move_start_flag_topic_name, 1, &SnakeCommand::moveStartFlagCallback, this);
     m_sub_joint_states = m_nh.subscribe<sensor_msgs::JointState>(m_sub_joint_states_topic_name, 1, &SnakeCommand::jointStatesCallback, this);
     m_sub_base_link_odom = m_nh.subscribe<nav_msgs::Odometry>(m_sub_base_link_odom_topic_name, 1, &SnakeCommand::baseLinkOdomCallback, this);
+    m_sub_cog_world_coord = m_nh.subscribe<aerial_robot_base::DesireCoord>(std::string("/desire_coordinate"), 1, &SnakeCommand::cogWorldCoordCallback, this);
     m_timer = m_nh.createTimer(ros::Duration(m_control_period), &SnakeCommand::controlCallback, this);
 
     m_traj_start_time = -1.0;
@@ -54,11 +55,11 @@ namespace snake_command{
       nav_msg.header.frame_id = std::string("/world");
       nav_msg.header.stamp = ros::Time::now();
       nav_msg.header.seq = 1;
-      nav_msg.pos_xy_nav_mode = nav_msg.VEL_MODE;
-      nav_msg.target_vel_x = 0.0;
-      nav_msg.target_vel_y = 0.0;
-      nav_msg.psi_nav_mode = nav_msg.POS_MODE;
-      nav_msg.target_psi = m_traj_fixed_yaw;
+      nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
+      // todo: set suitable command when finish the trajectory
+      nav_msg.target_att_r = 0.0;
+      nav_msg.target_att_p = 0.0;
+      nav_msg.target_att_y = m_traj_fixed_yaw;
       m_pub_flight_nav.publish(nav_msg);
       return;
     }
@@ -80,11 +81,11 @@ namespace snake_command{
     nav_msg.header.frame_id = std::string("/world");
     nav_msg.header.stamp = ros::Time::now();
     nav_msg.header.seq = 1;
-    nav_msg.pos_xy_nav_mode = nav_msg.VEL_MODE;
-    nav_msg.target_vel_x = vel.getX();
-    nav_msg.target_vel_y = vel.getY();
-    nav_msg.psi_nav_mode = nav_msg.POS_MODE;
-    nav_msg.target_psi = m_traj_fixed_yaw;
+    nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
+    tf::Vector3 vel_cog = attitudeCvtWorldToCog(vel);
+    nav_msg.target_att_r = vel_cog.getX();
+    nav_msg.target_att_p = vel_cog.getY();
+    nav_msg.target_att_y = m_traj_fixed_yaw;
     m_pub_flight_nav.publish(nav_msg);
   }
 
@@ -116,6 +117,30 @@ namespace snake_command{
                              transform.getOrigin().z());
   }
 
+  tf::Vector3 SnakeCommand::attitudeCvtWorldToCog(tf::Vector3 att_world)
+  {
+    tf::StampedTransform transform;
+    m_tf_listener.lookupTransform("/link2", "/world", ros::Time(0), transform);
+    tf::Matrix3x3 mat_l2_w = transform.getBasis();
+    double r_l2_w, p_l2_w, y_l2_w;
+    mat_l2_w.getRPY(r_l2_w, p_l2_w, y_l2_w);
+    tf::Matrix3x3 mat_l2_w_flat, mat_cog_l2_flat;
+    mat_l2_w_flat.setRPY(0, 0, y_l2_w + 1.5708);
+    mat_cog_l2_flat.setRPY(0, 0, m_cog_world_rpy[2]);
+    tf::StampedTransform tran_l2_w_flat, tran_cog_l2_flat;
+    tran_l2_w_flat.setBasis(mat_l2_w_flat);
+    tran_cog_l2_flat.setBasis(mat_cog_l2_flat);
+    tf::Vector3 att_cog = tran_cog_l2_flat * (tran_l2_w_flat * att_world);
+    return att_cog;
+  }
+
+  void SnakeCommand::cogWorldCoordCallback(const aerial_robot_base::DesireCoordConstPtr& coord_msg)
+  {
+    m_cog_world_rpy[0] = coord_msg->roll;
+    m_cog_world_rpy[1] = coord_msg->pitch;
+    m_cog_world_rpy[2] = coord_msg->yaw;
+  }
+
   void SnakeCommand::baseLinkOdomCallback(const nav_msgs::OdometryConstPtr& odom_msg)
   {
     m_base_link_odom = *odom_msg;
@@ -125,7 +150,7 @@ namespace snake_command{
                      odom_msg->pose.pose.orientation.w);
     tf::Matrix3x3 rot_mat;
     rot_mat.setRotation(q);
-    tfScalar r,p,y;
+    double r,p,y;
     rot_mat.getRPY(r, p, y);
     m_base_link_ang.setValue(r, p, y);
     m_base_link_pos.setValue(odom_msg->pose.pose.position.x,
