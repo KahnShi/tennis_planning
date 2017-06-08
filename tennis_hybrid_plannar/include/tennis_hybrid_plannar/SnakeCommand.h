@@ -80,6 +80,10 @@ namespace snake_command{
     /* tennis */
     tf::Vector3 m_racket_1_pos;
     tf::Vector3 m_racket_1_base_link_offset;
+    int m_racket_state;
+    static constexpr uint8_t RACKET_RELEX = 1;
+    static constexpr uint8_t RACKET_COMPRESS = 2;
+    static constexpr uint8_t RACKET_HIT = 3;
 
     /* Publisher */
     ros::Publisher m_pub_flight_nav;

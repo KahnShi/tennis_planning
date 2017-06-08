@@ -33,6 +33,7 @@ namespace snake_command{
     m_traj_start_time = -1.0;
     m_traj_track_i_term_accumulation.setValue(0.0, 0.0, 0.0);
     m_traj_track_state = TRAJ_TRACK_NOT_START;
+    m_racket_state = RACKET_RELEX;
   }
 
   void SnakeCommand::controlCallback(const ros::TimerEvent& e)
@@ -51,17 +52,12 @@ namespace snake_command{
   void SnakeCommand::directTrackGlobalTrajectory()
   {
     double current_traj_time = (m_traj_current_time - m_traj_start_time);
+    double sanke_joint_vel = 0.785;
+    double snake_joint_compress_ang = -0.785;//-0.52;
+    double racket_compress_time = fabs(snake_joint_compress_ang) / sanke_joint_vel;
     if (m_traj_track_state == TRAJ_TRACK_FINISH || current_traj_time >= m_traj_primitive->m_traj_period_time){
       if (m_traj_track_state == TRAJ_TRACK_ON_GOING){
         m_traj_track_state = TRAJ_TRACK_FINISH;
-        ROS_INFO("\nArrived at last control point. \n");
-        /* wave racket */
-        // here racket is static
-        sensor_msgs::JointState joints_msg;
-        joints_msg.position.push_back(0);
-        joints_msg.position.push_back(1.5708);
-        joints_msg.position.push_back(0.0);
-        m_pub_joints_ctrl.publish(joints_msg);
       }
       aerial_robot_base::FlightNav nav_msg;
       nav_msg.header.frame_id = std::string("/world");
@@ -74,6 +70,27 @@ namespace snake_command{
       nav_msg.target_att_y = m_traj_fixed_yaw;
       m_pub_flight_nav.publish(nav_msg);
       return;
+    }
+    if (m_racket_state == RACKET_COMPRESS
+        && current_traj_time >= m_traj_primitive->m_traj_period_time - racket_compress_time){
+      m_racket_state = RACKET_HIT;
+      /* wave racket */
+      // here racket is static
+      sensor_msgs::JointState joints_msg;
+      joints_msg.position.push_back(1.5708);
+      joints_msg.position.push_back(1.5708);
+      joints_msg.position.push_back(0.0);
+      m_pub_joints_ctrl.publish(joints_msg);
+    }
+    else if (m_racket_state == RACKET_RELEX
+             && m_traj_primitive->m_traj_period_time >= racket_compress_time * 2
+             && current_traj_time >= m_traj_primitive->m_traj_period_time - racket_compress_time * 2){
+      m_racket_state = RACKET_COMPRESS;
+      sensor_msgs::JointState joints_msg;
+      joints_msg.position.push_back(snake_joint_compress_ang);
+      joints_msg.position.push_back(1.5708);
+      joints_msg.position.push_back(0.0);
+      m_pub_joints_ctrl.publish(joints_msg);
     }
     tf::Vector3 des_world_vel = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 1));
     tf::Vector3 des_world_pos = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 0)) + m_racket_1_base_link_offset;
@@ -211,7 +228,7 @@ namespace snake_command{
     racket_center_expected_marker.scale.x = 0.2;
     racket_center_expected_marker.scale.y = 0.2;
     racket_center_expected_marker.scale.z = 0.2;
-    racket_center_expected_marker.color.a = 1.0;
+    racket_center_expected_marker.color.a = 0.5;
     racket_center_expected_marker.color.r = 1.0f;
     racket_center_expected_marker.color.g = 1.0f;
     racket_center_expected_marker.color.b = 0.0f;

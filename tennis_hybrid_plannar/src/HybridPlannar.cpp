@@ -77,7 +77,7 @@ namespace hybrid_plannar
     nav_msg.header.seq = 3;
     nav_msg.pos_xy_nav_mode = nav_msg.POS_MODE;
     nav_msg.target_pos_x = -0.6;
-    nav_msg.target_pos_y = -6.0;
+    nav_msg.target_pos_y = -7.0;
     nav_msg.pos_z_nav_mode = nav_msg.POS_MODE;
     nav_msg.target_pos_z = 1.2;
     m_pub_snake_flight_nav.publish(nav_msg);
