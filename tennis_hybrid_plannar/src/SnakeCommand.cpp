@@ -63,6 +63,7 @@ namespace snake_command{
       m_pub_flight_nav.publish(nav_msg);
       return;
     }
+      //todo: consider offset of racket
     tf::Vector3 des_world_vel = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 1));
     tf::Vector3 des_world_pos = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 0));
     tf::Vector3 real_world_pos;
@@ -75,16 +76,19 @@ namespace snake_command{
     tf::Vector3 traj_track_i_term = m_traj_track_i_term_accumulation * 0.0 * 0.1;
 
     /* feedforward */
-    tf::Vector3 vel = des_world_vel + traj_track_p_term + traj_track_i_term;
+    tf::Vector3 des_vel = des_world_vel + traj_track_p_term + traj_track_i_term;
+    tf::Vector3 real_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
+    tf::Vector3 des_acc = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 2));
+    tf::Vector3 att = (des_acc + (des_vel - real_vel) * 0.3) / 10.0;
 
     aerial_robot_base::FlightNav nav_msg;
     nav_msg.header.frame_id = std::string("/world");
     nav_msg.header.stamp = ros::Time::now();
     nav_msg.header.seq = 1;
     nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
-    tf::Vector3 vel_cog = attitudeCvtWorldToCog(vel);
-    nav_msg.target_att_r = vel_cog.getX();
-    nav_msg.target_att_p = vel_cog.getY();
+    tf::Vector3 att_cog = attitudeCvtWorldToCog(att);
+    nav_msg.target_att_r = att_cog.getX();
+    nav_msg.target_att_p = att_cog.getY();
     nav_msg.target_att_y = m_traj_fixed_yaw;
     m_pub_flight_nav.publish(nav_msg);
   }
