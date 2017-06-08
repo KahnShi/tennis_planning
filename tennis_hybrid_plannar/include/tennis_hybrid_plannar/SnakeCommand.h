@@ -70,6 +70,12 @@ namespace snake_command{
     tf::Vector3 m_traj_track_i_term_accumulation;
     MotionPrimitives *m_traj_primitive;
     double m_traj_fixed_yaw;
+    int m_traj_robot_state;
+    uint8_t m_traj_track_state;
+
+    static constexpr uint8_t TRAJ_TRACK_NOT_START = 1;
+    static constexpr uint8_t TRAJ_TRACK_ON_GOING = 2;
+    static constexpr uint8_t TRAJ_TRACK_FINISH = 3;
 
     /* tennis */
     tf::Vector3 m_racket_1_pos;

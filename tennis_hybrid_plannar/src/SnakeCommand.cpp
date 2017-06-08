@@ -22,16 +22,17 @@ namespace snake_command{
     // /uav/state get uav link2's global position, velocity, orientation
     m_pub_flight_nav = m_nh.advertise<aerial_robot_base::FlightNav>(m_pub_flight_nav_topic_name, 1);
     m_pub_joints_ctrl = m_nh.advertise<sensor_msgs::JointState>(m_pub_joints_ctrl_topic_name, 1);
+    m_pub_racket_center_expected_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/racket_center_expected_markers", 1);
 
     m_sub_move_start_flag = m_nh.subscribe<std_msgs::Empty>(m_sub_move_start_flag_topic_name, 1, &SnakeCommand::moveStartFlagCallback, this);
     m_sub_joint_states = m_nh.subscribe<sensor_msgs::JointState>(m_sub_joint_states_topic_name, 1, &SnakeCommand::jointStatesCallback, this);
     m_sub_base_link_odom = m_nh.subscribe<nav_msgs::Odometry>(m_sub_base_link_odom_topic_name, 1, &SnakeCommand::baseLinkOdomCallback, this);
     m_sub_cog_world_coord = m_nh.subscribe<aerial_robot_base::DesireCoord>(std::string("/desire_coordinate"), 1, &SnakeCommand::cogWorldCoordCallback, this);
-    m_pub_racket_center_expected_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/racket_center_expected_markers", 1);
     m_timer = m_nh.createTimer(ros::Duration(m_control_period), &SnakeCommand::controlCallback, this);
 
     m_traj_start_time = -1.0;
     m_traj_track_i_term_accumulation.setValue(0.0, 0.0, 0.0);
+    m_traj_track_state = TRAJ_TRACK_NOT_START;
   }
 
   void SnakeCommand::controlCallback(const ros::TimerEvent& e)
@@ -42,16 +43,25 @@ namespace snake_command{
       m_traj_start_time = e.current_real.toSec();
 
     m_traj_current_time = e.current_real.toSec();
-
+    m_traj_track_state = TRAJ_TRACK_ON_GOING;
     directTrackGlobalTrajectory();
   }
 
   void SnakeCommand::directTrackGlobalTrajectory()
   {
     double current_traj_time = (m_traj_current_time - m_traj_start_time);
-    if (current_traj_time >= m_traj_primitive->m_traj_period_time){
-      if (current_traj_time - m_traj_primitive->m_traj_period_time < 0.1)
+    if (m_traj_track_state == TRAJ_TRACK_FINISH || current_traj_time >= m_traj_primitive->m_traj_period_time){
+      if (m_traj_track_state == TRAJ_TRACK_ON_GOING){
+        m_traj_track_state = TRAJ_TRACK_FINISH;
         ROS_INFO("\nArrived at last control point. \n");
+        /* wave racket */
+        // here racket is static
+        sensor_msgs::JointState joints_msg;
+        joints_msg.position.push_back(0);
+        joints_msg.position.push_back(1.5708);
+        joints_msg.position.push_back(0.0);
+        m_pub_joints_ctrl.publish(joints_msg);
+      }
       aerial_robot_base::FlightNav nav_msg;
       nav_msg.header.frame_id = std::string("/world");
       nav_msg.header.stamp = ros::Time::now();
