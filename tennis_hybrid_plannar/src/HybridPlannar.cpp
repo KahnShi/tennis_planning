@@ -97,6 +97,8 @@ namespace hybrid_plannar
     if (getFesibleTrajectory()){
       visualizeTrajectory();
       m_snake_command_ptr->m_traj_primitive = m_traj_primitive_ptr;
+      // print trajectory paramaters to sceen
+      m_traj_primitive_ptr->printTrajectoryParamaters();
     }
   }
 

@@ -114,4 +114,18 @@ namespace motion_primitives{
     costs /= m_traj_period_time;
     return costs;
   }
+
+  void MotionPrimitives::printTrajectoryParamaters()
+  {
+    printf("Trajectory paramaters:\n[x]: ");
+    for (int i = 0; i <= m_traj_order; ++i)
+      std::cout << (*m_traj_param_x_ptr)[i] << ", ";
+    printf("\n[y]: ");
+    for (int i = 0; i <= m_traj_order; ++i)
+      std::cout << (*m_traj_param_y_ptr)[i] << ", ";
+    printf("\n[z]: ");
+    for (int i = 0; i <= m_traj_order; ++i)
+      std::cout << (*m_traj_param_z_ptr)[i] << ", ";
+    printf("\n\n");
+  }
 }

@@ -39,6 +39,7 @@ namespace motion_primitives
     Vector3d getTrajectoryPoint(double t, int dev_order = 0);
     double getTrajectoryJerkCost();
     inline int permutation(int n, int order);
+    void printTrajectoryParamaters();
   };
 }
 
