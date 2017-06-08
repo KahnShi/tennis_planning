@@ -27,6 +27,7 @@ namespace snake_command{
     m_sub_joint_states = m_nh.subscribe<sensor_msgs::JointState>(m_sub_joint_states_topic_name, 1, &SnakeCommand::jointStatesCallback, this);
     m_sub_base_link_odom = m_nh.subscribe<nav_msgs::Odometry>(m_sub_base_link_odom_topic_name, 1, &SnakeCommand::baseLinkOdomCallback, this);
     m_sub_cog_world_coord = m_nh.subscribe<aerial_robot_base::DesireCoord>(std::string("/desire_coordinate"), 1, &SnakeCommand::cogWorldCoordCallback, this);
+    m_pub_racket_center_expected_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/racket_center_expected_markers", 1);
     m_timer = m_nh.createTimer(ros::Duration(m_control_period), &SnakeCommand::controlCallback, this);
 
     m_traj_start_time = -1.0;
@@ -63,23 +64,24 @@ namespace snake_command{
       m_pub_flight_nav.publish(nav_msg);
       return;
     }
-      //todo: consider offset of racket
+    //todo: consider offset of racket
     tf::Vector3 des_world_vel = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 1));
     tf::Vector3 des_world_pos = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 0));
+    /* Visualization for expected racket position */
+    visualizeRacketExpectedPosition(des_world_pos);
     tf::Vector3 real_world_pos;
-    // link1
     real_world_pos = m_racket_1_pos;
 
     /* pid control in trajectory tracking */
-    tf::Vector3 traj_track_p_term =  (des_world_pos - real_world_pos) * 0.45;
+    tf::Vector3 traj_track_p_term =  (des_world_pos - real_world_pos) * 0.5;
     m_traj_track_i_term_accumulation += (des_world_pos - real_world_pos) * m_control_period;
-    tf::Vector3 traj_track_i_term = m_traj_track_i_term_accumulation * 0.0 * 0.1;
+    tf::Vector3 traj_track_i_term = m_traj_track_i_term_accumulation * 0.1;
 
     /* feedforward */
     tf::Vector3 des_vel = des_world_vel + traj_track_p_term + traj_track_i_term;
     tf::Vector3 real_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
     tf::Vector3 des_acc = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 2));
-    tf::Vector3 att = (des_acc + (des_vel - real_vel) * 0.3) / 10.0;
+    tf::Vector3 att = (des_acc + (des_vel - real_vel) * 0.5) / 9.78;
 
     aerial_robot_base::FlightNav nav_msg;
     nav_msg.header.frame_id = std::string("/world");
@@ -182,4 +184,29 @@ namespace snake_command{
     return vec3;
   }
 
+  void SnakeCommand::visualizeRacketExpectedPosition(tf::Vector3 des_pos)
+  {
+    visualization_msgs::MarkerArray markers;
+    visualization_msgs::Marker racket_center_expected_marker;
+    racket_center_expected_marker.ns = "racket_center_expected";
+    racket_center_expected_marker.header.frame_id = std::string("/world");
+    racket_center_expected_marker.header.stamp = ros::Time().now();
+    racket_center_expected_marker.action = visualization_msgs::Marker::ADD;
+    racket_center_expected_marker.type = visualization_msgs::Marker::SPHERE;
+    racket_center_expected_marker.pose.position.x = des_pos.getX();
+    racket_center_expected_marker.pose.position.y = des_pos.getY();
+    racket_center_expected_marker.pose.position.z = des_pos.getZ();
+    racket_center_expected_marker.lifetime = ros::Duration(0.1);
+
+    racket_center_expected_marker.scale.x = 0.2;
+    racket_center_expected_marker.scale.y = 0.2;
+    racket_center_expected_marker.scale.z = 0.2;
+    racket_center_expected_marker.color.a = 1.0;
+    racket_center_expected_marker.color.r = 1.0f;
+    racket_center_expected_marker.color.g = 1.0f;
+    racket_center_expected_marker.color.b = 0.0f;
+    markers.markers.push_back(racket_center_expected_marker);
+
+    m_pub_racket_center_expected_markers.publish(markers);
+  }
 }

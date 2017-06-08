@@ -77,6 +77,7 @@ namespace snake_command{
     /* Publisher */
     ros::Publisher m_pub_flight_nav;
     ros::Publisher m_pub_joints_ctrl;
+    ros::Publisher m_pub_racket_center_expected_markers;
 
     /* Subscriber */
     ros::Subscriber m_sub_move_start_flag;
@@ -95,6 +96,7 @@ namespace snake_command{
     inline tf::Vector3 vectorToVector3(std::vector<double> vec);
     inline tf::Vector3 vector3dToVector3(Vector3d vec);
     tf::Vector3 attitudeCvtWorldToCog(tf::Vector3 att_world);
+    void visualizeRacketExpectedPosition(tf::Vector3 des_pos);
   };
 }
 
