@@ -79,6 +79,7 @@ namespace snake_command{
 
     /* tennis */
     tf::Vector3 m_racket_1_pos;
+    tf::Vector3 m_racket_1_base_link_offset;
 
     /* Publisher */
     ros::Publisher m_pub_flight_nav;

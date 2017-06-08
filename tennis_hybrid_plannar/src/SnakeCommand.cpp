@@ -44,6 +44,7 @@ namespace snake_command{
 
     m_traj_current_time = e.current_real.toSec();
     m_traj_track_state = TRAJ_TRACK_ON_GOING;
+    m_racket_1_base_link_offset = m_links_pos_ptr[1] - m_racket_1_pos;
     directTrackGlobalTrajectory();
   }
 
@@ -74,13 +75,12 @@ namespace snake_command{
       m_pub_flight_nav.publish(nav_msg);
       return;
     }
-    //todo: consider offset of racket
     tf::Vector3 des_world_vel = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 1));
-    tf::Vector3 des_world_pos = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 0));
+    tf::Vector3 des_world_pos = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 0)) + m_racket_1_base_link_offset;
     /* Visualization for expected racket position */
-    visualizeRacketExpectedPosition(des_world_pos);
+    visualizeRacketExpectedPosition(des_world_pos - m_racket_1_base_link_offset);
     tf::Vector3 real_world_pos;
-    real_world_pos = m_racket_1_pos;
+    real_world_pos = m_links_pos_ptr[1];
 
     /* pid control in trajectory tracking */
     tf::Vector3 traj_track_p_term =  (des_world_pos - real_world_pos) * 0.5;
