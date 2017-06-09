@@ -53,7 +53,13 @@ namespace snake_command{
   {
     double current_traj_time = (m_traj_current_time - m_traj_start_time);
     double sanke_joint_vel = 0.785;
-    double snake_joint_compress_ang = -0.785;//-0.52;
+    double mininum_racket_compress_start_time = 0.5;
+    double snake_joint_compress_ang = -(m_traj_primitive->m_traj_period_time -
+                                        mininum_racket_compress_start_time)
+      / 2.0 * sanke_joint_vel;
+    // wave angle do not exceed pi/4
+    if (snake_joint_compress_ang < -0.785)
+      snake_joint_compress_ang = -0.785;
     double racket_compress_time = fabs(snake_joint_compress_ang) / sanke_joint_vel;
     if (m_traj_track_state == TRAJ_TRACK_FINISH || current_traj_time >= m_traj_primitive->m_traj_period_time){
       if (m_traj_track_state == TRAJ_TRACK_ON_GOING){
@@ -65,6 +71,9 @@ namespace snake_command{
       nav_msg.header.seq = 1;
       nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
       // todo: set suitable command when finish the trajectory
+      // tf::Vector3 att = (tf::Vector3(0.0, 0.0, 0.0) - tf::Vector3(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ())) * 0.5 / 9.78;
+      // nav_msg.target_att_r = att.getX();
+      // nav_msg.target_att_p = att.getY();
       nav_msg.target_att_r = 0.0;
       nav_msg.target_att_p = 0.0;
       nav_msg.target_att_y = m_traj_fixed_yaw;
