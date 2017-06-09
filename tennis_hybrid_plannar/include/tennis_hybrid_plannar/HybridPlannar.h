@@ -54,6 +54,7 @@ namespace hybrid_plannar{
     ros::Publisher m_pub_snake_joint_states;
     ros::Publisher m_pub_snake_flight_nav;
     ros::Publisher m_pub_tennis_ball_markers;
+    ros::Publisher m_pub_tennis_table_markers;
     ros::Publisher m_pub_snake_traj_path;
 
     /* Topic name */
@@ -89,6 +90,7 @@ namespace hybrid_plannar{
     void tennisBallOdomCallback(const nav_msgs::OdometryConstPtr& msg);
     bool generateTrajectory();
     void visualizeTennisBall();
+    void visualizeTennisTable();
     bool getFesibleTrajectory();
     void visualizeTrajectory();
   };

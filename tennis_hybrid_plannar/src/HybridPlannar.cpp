@@ -28,6 +28,7 @@ namespace hybrid_plannar
     m_pub_snake_joint_states = m_nh.advertise<sensor_msgs::JointState>(m_pub_snake_joint_states_topic_name, 1);
     m_pub_snake_flight_nav = m_nh.advertise<aerial_robot_base::FlightNav>(m_pub_snake_flight_nav_topic_name, 1);
     m_pub_tennis_ball_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/tennis_ball_markers", 1);
+    m_pub_tennis_table_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/tennis_table_markers", 1);
     m_pub_snake_traj_path = m_nh.advertise<nav_msgs::Path>(m_pub_snake_traj_path_topic_name, 1);
 
     /* Init value */
@@ -87,6 +88,7 @@ namespace hybrid_plannar
     m_pub_snake_flight_nav.publish(nav_msg);
     usleep(2000000);
     ROS_INFO("[HybridPlannar] Snake reach initial joints state.");
+    visualizeTennisTable();
   }
 
   void HybridPlannar::taskStartCallback(std_msgs::Empty msg)
@@ -236,4 +238,118 @@ namespace hybrid_plannar
     }
     m_pub_snake_traj_path.publish(traj_path);
   }
+
+  void HybridPlannar::visualizeTennisTable()
+  {
+    /* tennis table data:
+       table four corners (x, y): -0.74, -4.28; 0.74, -4.28; 0.74, -1.57; -0.74, -1.57
+       table plain height: z:(0.74, 0.77)
+       four legs offset to four table corner: (x, y): (0.14, 0.3)
+     */
+    int id = 0;
+    visualization_msgs::MarkerArray markers;
+    visualization_msgs::Marker tennis_table_marker, tennis_table_net_marker, tennis_table_leg_marker;
+    tennis_table_marker.ns = "tennis_table";
+    tennis_table_marker.header.frame_id = std::string("/world");
+    tennis_table_marker.header.stamp = ros::Time().now();
+    tennis_table_marker.action = visualization_msgs::Marker::ADD;
+    tennis_table_marker.type = visualization_msgs::Marker::CUBE;
+
+    tennis_table_marker.pose.orientation.x = 0.0;
+    tennis_table_marker.pose.orientation.z = 0.0;
+    tennis_table_marker.pose.orientation.y = 0.0;
+    tennis_table_marker.pose.orientation.w = 1.0;
+
+    tennis_table_net_marker = tennis_table_marker;
+    tennis_table_leg_marker = tennis_table_marker;
+
+    /* table plane */
+    tennis_table_marker.id = id;
+    ++id;
+    tennis_table_marker.pose.position.x = 0.0;
+    tennis_table_marker.pose.position.y = -2.93;
+    tennis_table_marker.pose.position.z = 0.755;
+    tennis_table_marker.scale.x = 1.48;
+    tennis_table_marker.scale.y = 2.7;
+    tennis_table_marker.scale.z = 0.15;
+    tennis_table_marker.color.a = 1.0;
+    tennis_table_marker.color.r = 0.11f;
+    tennis_table_marker.color.g = 0.39f;
+    tennis_table_marker.color.b = 0.16f;
+    markers.markers.push_back(tennis_table_marker);
+
+    /* table middle white line */
+    tennis_table_marker.id = id;
+    ++id;
+    tennis_table_marker.scale.x = 0.03;
+    // a little shorter than table plane to hide the white line on edge y
+    tennis_table_marker.scale.y = 2.68;
+    // a little higher than table plane to show the white line on edge z
+    tennis_table_marker.scale.z = 0.16;
+    tennis_table_marker.color.a = 1.0;
+    tennis_table_marker.color.r = 0.75f;
+    tennis_table_marker.color.g = 0.75f;
+    tennis_table_marker.color.b = 0.75f;
+    markers.markers.push_back(tennis_table_marker);
+
+    /* table middle net */
+    tennis_table_net_marker.id = id;
+    ++id;
+    tennis_table_net_marker.pose.position.x = 0.0;
+    tennis_table_net_marker.pose.position.y = -2.93;
+    tennis_table_net_marker.pose.position.z = 0.845;
+    tennis_table_net_marker.pose.orientation.x = 0.0;
+    tennis_table_net_marker.pose.orientation.z = 0.0;
+    tennis_table_net_marker.pose.orientation.y = 0.0;
+    tennis_table_net_marker.pose.orientation.w = 1.0;
+    tennis_table_net_marker.scale.x = 1.48;
+    tennis_table_net_marker.scale.y = 0.03;
+    tennis_table_net_marker.scale.z = 0.15;
+    tennis_table_net_marker.color.a = 0.8;
+    tennis_table_net_marker.color.r = 0.0f;
+    tennis_table_net_marker.color.g = 0.0f;
+    tennis_table_net_marker.color.b = 0.0f;
+    markers.markers.push_back(tennis_table_net_marker);
+
+    /* table four legs */
+    tennis_table_leg_marker.id = id;
+    ++id;
+    tennis_table_leg_marker.pose.position.x = -0.6;
+    tennis_table_leg_marker.pose.position.y = -3.98;
+    tennis_table_leg_marker.pose.position.z = 0.385;
+    tennis_table_leg_marker.scale.x = 0.04;
+    tennis_table_leg_marker.scale.y = 0.04;
+    tennis_table_leg_marker.scale.z = 0.77;
+    tennis_table_leg_marker.color.a = 0.8;
+    tennis_table_leg_marker.color.r = 1.0f;
+    tennis_table_leg_marker.color.g = 1.0f;
+    tennis_table_leg_marker.color.b = 1.0f;
+    markers.markers.push_back(tennis_table_leg_marker);
+
+    tennis_table_leg_marker.id = id;
+    ++id;
+    tennis_table_leg_marker.pose.position.x = 0.6;
+    tennis_table_leg_marker.pose.position.y = -3.98;
+    tennis_table_leg_marker.pose.position.z = 0.385;
+    markers.markers.push_back(tennis_table_leg_marker);
+
+    tennis_table_leg_marker.id = id;
+    ++id;
+    tennis_table_leg_marker.pose.position.x = -0.6;
+    tennis_table_leg_marker.pose.position.y = -1.87;
+    tennis_table_leg_marker.pose.position.z = 0.385;
+    markers.markers.push_back(tennis_table_leg_marker);
+
+    tennis_table_leg_marker.id = id;
+    ++id;
+    tennis_table_leg_marker.pose.position.x = 0.6;
+    tennis_table_leg_marker.pose.position.y = -1.87;
+    tennis_table_leg_marker.pose.position.z = 0.385;
+    markers.markers.push_back(tennis_table_leg_marker);
+
+    m_pub_tennis_table_markers.publish(markers);
+
+    ROS_INFO("Tennis table visualization finished.");
+  }
+
 }
