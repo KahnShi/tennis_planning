@@ -72,14 +72,16 @@ namespace snake_command{
     double m_traj_fixed_yaw;
     int m_traj_robot_state;
     uint8_t m_traj_track_state;
-
     static constexpr uint8_t TRAJ_TRACK_NOT_START = 1;
     static constexpr uint8_t TRAJ_TRACK_ON_GOING = 2;
     static constexpr uint8_t TRAJ_TRACK_FINISH = 3;
+    double m_traj_finish_height;
+    double m_traj_control_z_offset;
 
     /* tennis */
     tf::Vector3 m_racket_1_pos;
     tf::Vector3 m_racket_1_base_link_offset;
+    tf::Vector3 m_racket_2_pos;
     int m_racket_state;
     static constexpr uint8_t RACKET_RELEX = 1;
     static constexpr uint8_t RACKET_COMPRESS = 2;
@@ -97,6 +99,7 @@ namespace snake_command{
     ros::Subscriber m_sub_cog_world_coord;
     ros::Timer m_timer;
 
+    void initializeVariable();
     void moveStartFlagCallback(const std_msgs::Empty msg);
     void jointStatesCallback(const sensor_msgs::JointStateConstPtr& joints_msg);
     void baseLinkOdomCallback(const nav_msgs::OdometryConstPtr& odom_msg);

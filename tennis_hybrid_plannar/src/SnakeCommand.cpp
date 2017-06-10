@@ -30,6 +30,12 @@ namespace snake_command{
     m_sub_cog_world_coord = m_nh.subscribe<aerial_robot_base::DesireCoord>(std::string("/desire_coordinate"), 1, &SnakeCommand::cogWorldCoordCallback, this);
     m_timer = m_nh.createTimer(ros::Duration(m_control_period), &SnakeCommand::controlCallback, this);
 
+    initializeVariable();
+  }
+
+  void SnakeCommand::initializeVariable()
+  {
+    m_move_start_flag = false;
     m_traj_start_time = -1.0;
     m_traj_track_i_term_accumulation.setValue(0.0, 0.0, 0.0);
     m_traj_track_state = TRAJ_TRACK_NOT_START;
@@ -40,12 +46,17 @@ namespace snake_command{
   {
     if (!m_move_start_flag)
       return;
-    if (m_traj_start_time < 0)
+    /* first time to get control robot */
+    if (m_traj_start_time < 0){
       m_traj_start_time = e.current_real.toSec();
+      // todo: currently give offset in z axis, in case delay of position control
+      // but future need to change to pid based velocity control
+      m_traj_control_z_offset = (m_racket_1_pos.getZ() - m_traj_primitive->m_pos_tn[2]) * 0.125;
+      m_traj_track_state = TRAJ_TRACK_ON_GOING;
+      m_racket_1_base_link_offset = m_links_pos_ptr[1] - m_racket_1_pos;
+    }
 
     m_traj_current_time = e.current_real.toSec();
-    m_traj_track_state = TRAJ_TRACK_ON_GOING;
-    m_racket_1_base_link_offset = m_links_pos_ptr[1] - m_racket_1_pos;
     directTrackGlobalTrajectory();
   }
 
@@ -64,6 +75,9 @@ namespace snake_command{
     if (m_traj_track_state == TRAJ_TRACK_FINISH || current_traj_time >= m_traj_primitive->m_traj_period_time){
       if (m_traj_track_state == TRAJ_TRACK_ON_GOING){
         m_traj_track_state = TRAJ_TRACK_FINISH;
+        tf::Vector3 des_world_pos = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(m_traj_primitive->m_traj_period_time, 0))
+          + m_racket_1_base_link_offset;
+        m_traj_finish_height = des_world_pos.getZ();
       }
       aerial_robot_base::FlightNav nav_msg;
       nav_msg.header.frame_id = std::string("/world");
@@ -71,13 +85,17 @@ namespace snake_command{
       nav_msg.header.seq = 1;
       nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
       // todo: set suitable command when finish the trajectory
-      // tf::Vector3 att = (tf::Vector3(0.0, 0.0, 0.0) - tf::Vector3(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ())) * 0.5 / 9.78;
-      // nav_msg.target_att_r = att.getX();
-      // nav_msg.target_att_p = att.getY();
+      tf::Vector3 cur_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
+      tf::Vector3 att = -cur_vel * 1.0 / 9.78;
+      //nav_msg.target_att_r = att.getX();
+      //nav_msg.target_att_p = att.getY();
       nav_msg.target_att_r = 0.0;
       nav_msg.target_att_p = 0.0;
       nav_msg.target_att_y = m_traj_fixed_yaw;
+      nav_msg.pos_z_nav_mode = nav_msg.POS_MODE;
+      nav_msg.target_pos_z = m_traj_finish_height;
       m_pub_flight_nav.publish(nav_msg);
+      std::cout << "Cur vel: " << m_base_link_vel.getX() << ", " << m_base_link_vel.getY() << "\n";
       return;
     }
     if (m_racket_state == RACKET_COMPRESS
@@ -128,6 +146,8 @@ namespace snake_command{
     nav_msg.target_att_r = att_cog.getX();
     nav_msg.target_att_p = att_cog.getY();
     nav_msg.target_att_y = m_traj_fixed_yaw;
+    nav_msg.pos_z_nav_mode = nav_msg.POS_MODE;
+    nav_msg.target_pos_z = des_world_pos.getZ() - m_traj_control_z_offset;
     m_pub_flight_nav.publish(nav_msg);
   }
 
@@ -155,8 +175,19 @@ namespace snake_command{
     tf::StampedTransform transform;
     m_tf_listener.lookupTransform("/world", "/link_racket_1_center", ros::Time(0), transform);
     m_racket_1_pos.setValue(transform.getOrigin().x(),
-                             transform.getOrigin().y(),
-                             transform.getOrigin().z());
+                            transform.getOrigin().y(),
+                            transform.getOrigin().z());
+    m_tf_listener.lookupTransform("/world", "/link_racket_2_center", ros::Time(0), transform);
+    m_racket_2_pos.setValue(transform.getOrigin().x(),
+                            transform.getOrigin().y(),
+                            transform.getOrigin().z());
+    // change offset because roll pitch tilt angle will influence it.
+    if (m_move_start_flag){
+      // method 1, only adjust z axis every time
+      // m_racket_1_base_link_offset.setZ(m_links_pos_ptr[1].getZ() - m_racket_1_pos.getZ());
+      // method 2
+      m_racket_1_base_link_offset = m_links_pos_ptr[1] - m_racket_1_pos;
+    }
   }
 
   tf::Vector3 SnakeCommand::attitudeCvtWorldToCog(tf::Vector3 att_world)
