@@ -87,11 +87,15 @@ namespace snake_command{
     static constexpr uint8_t RACKET_RELEX = 1;
     static constexpr uint8_t RACKET_COMPRESS = 2;
     static constexpr uint8_t RACKET_HIT = 3;
+    // todo: static cheat mode
+    bool m_tennis_ball_static_hit_mode;
 
     /* Publisher */
     ros::Publisher m_pub_flight_nav;
     ros::Publisher m_pub_joints_ctrl;
     ros::Publisher m_pub_racket_center_expected_markers;
+    // todo: cheat mode
+    ros::Publisher m_pub_ball_start_odom;
 
     /* Subscriber */
     ros::Subscriber m_sub_move_start_flag;

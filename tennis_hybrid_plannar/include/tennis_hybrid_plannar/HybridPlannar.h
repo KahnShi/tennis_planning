@@ -7,6 +7,7 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Point32.h>
+#include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <tf/transform_broadcaster.h>
@@ -83,6 +84,8 @@ namespace hybrid_plannar{
     /* Tennis */
     nav_msgs::Odometry m_tennis_ball_odom;
     nav_msgs::Odometry m_tennis_racket_1_odom;
+    // todo: static cheat mode
+    bool m_tennis_ball_static_hit_mode;
 
     void snakeInitPose();
     void taskStartCallback(std_msgs::Empty msg);

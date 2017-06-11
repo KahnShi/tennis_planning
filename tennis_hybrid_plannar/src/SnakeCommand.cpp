@@ -24,6 +24,8 @@ namespace snake_command{
     m_pub_flight_nav = m_nh.advertise<aerial_robot_base::FlightNav>(m_pub_flight_nav_topic_name, 1);
     m_pub_joints_ctrl = m_nh.advertise<sensor_msgs::JointState>(m_pub_joints_ctrl_topic_name, 1);
     m_pub_racket_center_expected_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/racket_center_expected_markers", 1);
+    // todo: cheat mode
+    m_pub_ball_start_odom = m_nh.advertise<nav_msgs::Odometry>("/gazebo_ping_pong_ball_start_odom_1", 1);
 
     m_sub_move_start_flag = m_nh.subscribe<std_msgs::Empty>(m_sub_move_start_flag_topic_name, 1, &SnakeCommand::moveStartFlagCallback, this);
     m_sub_joint_states = m_nh.subscribe<sensor_msgs::JointState>(m_sub_joint_states_topic_name, 1, &SnakeCommand::jointStatesCallback, this);
@@ -57,6 +59,26 @@ namespace snake_command{
         m_traj_control_z_offset = 0.1;
       m_traj_track_state = TRAJ_TRACK_ON_GOING;
       m_racket_1_base_link_offset = m_links_pos_ptr[1] - m_racket_1_pos;
+
+      // todo : throw ball cheat mode
+      if (!m_tennis_ball_static_hit_mode){
+        nav_msgs::Odometry ball_start_odom;
+        ball_start_odom.pose.pose.orientation.x = 0.0;
+        ball_start_odom.pose.pose.orientation.y = 0.0;
+        ball_start_odom.pose.pose.orientation.z = 0.0;
+        ball_start_odom.pose.pose.orientation.w = 1.0;
+        tf::Vector3 ball_start_vel(0.0, -3.0, 9.81 * m_traj_primitive->m_traj_period_time / 2.0);
+        tf::Vector3 ball_start_pos = vector3dToVector3(m_traj_primitive->m_pos_tn) - ball_start_vel * m_traj_primitive->m_traj_period_time;
+        ball_start_pos.setZ(m_racket_1_pos.getZ() + 9.81 / 2 * pow(m_traj_primitive->m_traj_period_time, 2.0) - ball_start_vel.getZ() * m_traj_primitive->m_traj_period_time);
+
+        ball_start_odom.pose.pose.position.x = ball_start_pos.getX();
+        ball_start_odom.pose.pose.position.y = ball_start_pos.getY();
+        ball_start_odom.pose.pose.position.z = ball_start_pos.getZ();
+        ball_start_odom.twist.twist.linear.x = ball_start_vel.getX();
+        ball_start_odom.twist.twist.linear.y = ball_start_vel.getY();
+        ball_start_odom.twist.twist.linear.z = ball_start_vel.getZ();
+        m_pub_ball_start_odom.publish(ball_start_odom);
+      }
     }
 
     m_traj_current_time = e.current_real.toSec();
@@ -94,7 +116,7 @@ namespace snake_command{
       nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
       // todo: set suitable command when finish the trajectory
       tf::Vector3 cur_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
-      tf::Vector3 att = -cur_vel * 1.0 / 9.78;
+      tf::Vector3 att = -cur_vel * 1.0 / 9.81;
       tf::Vector3 att_cog = attitudeCvtWorldToCog(att);
       att_cog.setMax(tf::Vector3(-m_snake_attitude_max_value, -m_snake_attitude_max_value, -m_snake_attitude_max_value));
       att_cog.setMin(tf::Vector3(m_snake_attitude_max_value, m_snake_attitude_max_value, m_snake_attitude_max_value));
@@ -143,7 +165,7 @@ namespace snake_command{
     tf::Vector3 des_vel = des_world_vel + traj_track_p_term + traj_track_i_term;
     tf::Vector3 real_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
     tf::Vector3 des_acc = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 2));
-    tf::Vector3 att = (des_acc + (des_vel - real_vel) * 0.5) / 9.78;
+    tf::Vector3 att = (des_acc + (des_vel - real_vel) * 0.5) / 9.81;
 
     aerial_robot_base::FlightNav nav_msg;
     nav_msg.header.frame_id = std::string("/world");

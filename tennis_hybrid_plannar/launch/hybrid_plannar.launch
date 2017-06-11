@@ -1,0 +1,6 @@
+<launch>
+  <arg name="tennis_ball_static_hit_mode" default="True" />
+  <node pkg="tennis_hybrid_plannar" type="hybrid_plannar_node" name="hybrid_plannar_node" output="screen">
+    <param name="tennis_ball_static_hit_mode" value="$(arg tennis_ball_static_hit_mode)" />
+  </node>
+</launch>

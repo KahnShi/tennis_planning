@@ -16,6 +16,7 @@ namespace hybrid_plannar
     m_nhp.param("snake_links_number", m_n_snake_links, 4);
     m_nhp.param("snake_link_length", m_snake_link_length, 0.44);
     m_nhp.param("snake_average_vel", m_snake_average_vel, 0.5);
+    m_nhp.param("tennis_ball_static_hit_mode", m_tennis_ball_static_hit_mode, true);
 
     /* subscriber & publisher */
     m_sub_snake_odom = m_nh.subscribe<nav_msgs::Odometry>(m_sub_snake_odom_topic_name, 1, &HybridPlannar::snakeOdomCallback, this);
@@ -37,6 +38,7 @@ namespace hybrid_plannar
     m_snake_joint_states_ang_ptr = new double[m_n_snake_links + 1];
     m_snake_command_ptr = new SnakeCommand(m_nh, m_nhp);
     m_snake_command_ptr->m_traj_fixed_yaw = -0.785;
+    m_snake_command_ptr->m_tennis_ball_static_hit_mode = m_tennis_ball_static_hit_mode;
     m_traj_primitive_ptr = new MotionPrimitives();
 
     usleep(2000000);
@@ -108,9 +110,20 @@ namespace hybrid_plannar
   {
     // todo: travel time should not be pre-set, but discrete
     double period_time;
-    Vector3d d_dist(m_tennis_racket_1_odom.pose.pose.position.x - m_tennis_ball_odom.pose.pose.position.x,
-                    m_tennis_racket_1_odom.pose.pose.position.y - m_tennis_ball_odom.pose.pose.position.y,
-                    m_tennis_racket_1_odom.pose.pose.position.z - m_tennis_ball_odom.pose.pose.position.z);
+    geometry_msgs::Point ball_hit_pos;
+    // scenario 1: ball is static
+    if (m_tennis_ball_static_hit_mode)
+      ball_hit_pos = m_tennis_ball_odom.pose.pose.position;
+    // scenario 2: ball is dynamic, but hit point is fixed
+    else{
+      ball_hit_pos.x = -1.5;
+      ball_hit_pos.y = -4.5;
+      ball_hit_pos.z = 2.0;
+    }
+
+    Vector3d d_dist(m_tennis_racket_1_odom.pose.pose.position.x - ball_hit_pos.x,
+                    m_tennis_racket_1_odom.pose.pose.position.y - ball_hit_pos.y,
+                    m_tennis_racket_1_odom.pose.pose.position.z - ball_hit_pos.z);
     double avg_vel = 1.0;
     period_time = sqrt(pow(d_dist[0], 2) + pow(d_dist[1], 2) + pow(d_dist[2], 2)) / avg_vel;
 
@@ -137,13 +150,14 @@ namespace hybrid_plannar
                 // todo: set state_t0 velocity and acceleration according to robot sensor
                 state_t0[1] = Vector3d(0.0, 0.0, 0.0);
                 state_t0[2] = Vector3d(0.0, 0.0, 0.0);
-                state_tn[0] = Vector3d(m_tennis_ball_odom.pose.pose.position.x,
-                                       m_tennis_ball_odom.pose.pose.position.y,
-                                       m_tennis_ball_odom.pose.pose.position.z);
+                state_tn[0] = Vector3d(ball_hit_pos.x,
+                                       ball_hit_pos.y,
+                                       ball_hit_pos.z);
                 state_tn[1] = Vector3d(vel_x_id, vel_y_id, vel_z_id) * vel_res
                   + Vector3d(vel_min, vel_min, vel_min);
                 state_tn[2] = Vector3d(acc_x_id, acc_y_id, acc_z_id) * acc_res
                   + Vector3d(acc_min, acc_min, acc_min);
+
                 MotionPrimitives *traj_primitive_ptr = new MotionPrimitives();
                 traj_primitive_ptr->inputTrajectoryParam(5, period_time, state_t0, state_tn);
                 double traj_cost = traj_primitive_ptr->getTrajectoryJerkCost();
