@@ -83,6 +83,7 @@ namespace snake_command{
         m_traj_finish_height = des_world_pos.getZ();
         /* if finish height is too low, robot will crash into table */
         // todo: several states before reaching to 2.0m. eg. first 1.5m, then 2.0m
+        // otherwise there will be a positive speed in z axis at finishing point, because trajectory time is not strictly correspond to uav hitting time
         if (m_traj_finish_height < 2.0)
           m_traj_finish_height = 2.0;
       }
