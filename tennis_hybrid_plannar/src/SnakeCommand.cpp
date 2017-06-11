@@ -94,7 +94,7 @@ namespace snake_command{
       nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
       // todo: set suitable command when finish the trajectory
       tf::Vector3 cur_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
-      tf::Vector3 att = -cur_vel * 1.0 / 9.78;
+      tf::Vector3 att = -cur_vel * 1.0 / 9.81;
       tf::Vector3 att_cog = attitudeCvtWorldToCog(att);
       att_cog.setMax(tf::Vector3(-m_snake_attitude_max_value, -m_snake_attitude_max_value, -m_snake_attitude_max_value));
       att_cog.setMin(tf::Vector3(m_snake_attitude_max_value, m_snake_attitude_max_value, m_snake_attitude_max_value));
@@ -143,7 +143,7 @@ namespace snake_command{
     tf::Vector3 des_vel = des_world_vel + traj_track_p_term + traj_track_i_term;
     tf::Vector3 real_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
     tf::Vector3 des_acc = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 2));
-    tf::Vector3 att = (des_acc + (des_vel - real_vel) * 0.5) / 9.78;
+    tf::Vector3 att = (des_acc + (des_vel - real_vel) * 0.5) / 9.81;
 
     aerial_robot_base::FlightNav nav_msg;
     nav_msg.header.frame_id = std::string("/world");
