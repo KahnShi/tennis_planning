@@ -11,6 +11,7 @@ namespace snake_command{
     m_nhp.param("snake_links_number", m_n_links, 4);
     m_nhp.param("snake_link_length", m_link_length, 0.44);
     m_nhp.param("control_period", m_control_period, 0.05);
+    m_nhp.param("snake_attitude_max_value", m_snake_attitude_max_value, 0.3);
 
     m_move_start_flag = false;
     m_links_pos_ptr = new tf::Vector3[m_n_links + 1];
@@ -52,6 +53,8 @@ namespace snake_command{
       // todo: currently give offset in z axis, in case delay of position control
       // but future need to change to pid based velocity control
       m_traj_control_z_offset = (m_racket_1_pos.getZ() - m_traj_primitive->m_pos_tn[2]) * 0.125;
+      if (m_traj_control_z_offset > 0.1)
+        m_traj_control_z_offset = 0.1;
       m_traj_track_state = TRAJ_TRACK_ON_GOING;
       m_racket_1_base_link_offset = m_links_pos_ptr[1] - m_racket_1_pos;
     }
@@ -78,6 +81,10 @@ namespace snake_command{
         tf::Vector3 des_world_pos = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(m_traj_primitive->m_traj_period_time, 0))
           + m_racket_1_base_link_offset;
         m_traj_finish_height = des_world_pos.getZ();
+        /* if finish height is too low, robot will crash into table */
+        // todo: several states before reaching to 2.0m. eg. first 1.5m, then 2.0m
+        if (m_traj_finish_height < 2.0)
+          m_traj_finish_height = 2.0;
       }
       aerial_robot_base::FlightNav nav_msg;
       nav_msg.header.frame_id = std::string("/world");
@@ -87,15 +94,15 @@ namespace snake_command{
       // todo: set suitable command when finish the trajectory
       tf::Vector3 cur_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
       tf::Vector3 att = -cur_vel * 1.0 / 9.78;
-      //nav_msg.target_att_r = att.getX();
-      //nav_msg.target_att_p = att.getY();
-      nav_msg.target_att_r = 0.0;
-      nav_msg.target_att_p = 0.0;
+      tf::Vector3 att_cog = attitudeCvtWorldToCog(att);
+      att_cog.setMax(tf::Vector3(-m_snake_attitude_max_value, -m_snake_attitude_max_value, -m_snake_attitude_max_value));
+      att_cog.setMin(tf::Vector3(m_snake_attitude_max_value, m_snake_attitude_max_value, m_snake_attitude_max_value));
+      nav_msg.target_att_r = att_cog.getX();
+      nav_msg.target_att_p = att_cog.getY();
       nav_msg.target_att_y = m_traj_fixed_yaw;
       nav_msg.pos_z_nav_mode = nav_msg.POS_MODE;
       nav_msg.target_pos_z = m_traj_finish_height;
       m_pub_flight_nav.publish(nav_msg);
-      std::cout << "Cur vel: " << m_base_link_vel.getX() << ", " << m_base_link_vel.getY() << "\n";
       return;
     }
     if (m_racket_state == RACKET_COMPRESS

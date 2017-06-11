@@ -63,6 +63,7 @@ namespace snake_command{
 
     tf::TransformListener m_tf_listener;
     double m_cog_world_rpy[3];
+    double m_snake_attitude_max_value;
 
     /* Trajectory */
     double m_traj_start_time;
