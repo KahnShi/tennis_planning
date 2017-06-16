@@ -17,6 +17,8 @@ namespace hybrid_plannar
     m_nhp.param("snake_link_length", m_snake_link_length, 0.44);
     m_nhp.param("snake_average_vel", m_snake_average_vel, 0.5);
     m_nhp.param("tennis_ball_static_hit_mode", m_tennis_ball_static_hit_mode, true);
+    m_nhp.param("visualize_candidate_num", m_visualize_candidate_num, 100);
+    m_nhp.param("visualize_candidate_flag", m_visualize_candidate_flag, true);
 
     /* subscriber & publisher */
     m_sub_snake_odom = m_nh.subscribe<nav_msgs::Odometry>(m_sub_snake_odom_topic_name, 1, &HybridPlannar::snakeOdomCallback, this);
@@ -31,6 +33,7 @@ namespace hybrid_plannar
     m_pub_tennis_ball_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/tennis_ball_markers", 1);
     m_pub_tennis_table_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/tennis_table_markers", 1);
     m_pub_snake_traj_path = m_nh.advertise<nav_msgs::Path>(m_pub_snake_traj_path_topic_name, 1);
+    m_pub_snake_traj_candidates_markers = m_nh.advertise<visualization_msgs::MarkerArray>("/traj_candidates", 1);
 
     /* Init value */
     m_task_start_flag = false;
@@ -40,6 +43,7 @@ namespace hybrid_plannar
     m_snake_command_ptr->m_traj_fixed_yaw = -0.785;
     m_snake_command_ptr->m_tennis_ball_static_hit_mode = m_tennis_ball_static_hit_mode;
     m_traj_primitive_ptr = new MotionPrimitives();
+    srand (time(NULL));
 
     usleep(2000000);
     ROS_INFO("[HybridPlannar] Initialization finished.");
@@ -129,13 +133,19 @@ namespace hybrid_plannar
 
     std::cout << "[HybridPlannar] Period time: " << period_time << "\n\n";
 
+    if (m_visualize_candidate_flag)
+      initCandidateVisualization();
     // discrete velocity [0, 2.0], resolution 0.2
     // discrete acceleration [-2.0, 2.0], resolution 0.4
     double vel_min = 0.0, vel_max = 2.0, acc_min = -2.0, acc_max = 2.0;
     double vel_res = 0.2*2, acc_res = 0.4*2;
     double min_cost = -1;
     int vel_cnts = int((vel_max-vel_min)/vel_res), acc_cnts = int((acc_max-acc_min)/acc_res);
-    for (int vel_x_id = 0; vel_x_id <= vel_cnts; ++vel_x_id)
+
+    int motion_candidates_num = int(pow(vel_cnts+1, 3) * pow(acc_cnts+1, 3));
+    int visualize_candidate_dense = motion_candidates_num / m_visualize_candidate_num;
+
+      for (int vel_x_id = 0; vel_x_id <= vel_cnts; ++vel_x_id)
       for (int vel_y_id = 0; vel_y_id <= vel_cnts; ++vel_y_id)
         for (int vel_z_id = 0; vel_z_id <= vel_cnts; ++vel_z_id)
           for (int acc_x_id = 0; acc_x_id <= acc_cnts; ++acc_x_id)
@@ -165,7 +175,13 @@ namespace hybrid_plannar
                   min_cost = traj_cost;
                   (*m_traj_primitive_ptr) = (*traj_primitive_ptr);
                 }
+                if (m_visualize_candidate_flag && rand() % visualize_candidate_dense == 0)
+                  addCandidateTrajectory(traj_primitive_ptr);
               }
+
+    if (m_visualize_candidate_flag)
+      visualizeCandidateTrajectory();
+
     if (min_cost < 0){
       ROS_ERROR("[HybridPlannar] Could not find the mininum cost trajectory.");
       return false;
@@ -224,6 +240,52 @@ namespace hybrid_plannar
     markers.markers.push_back(tennis_ball_marker);
 
     m_pub_tennis_ball_markers.publish(markers);
+  }
+
+  void HybridPlannar::addCandidateTrajectory(MotionPrimitives *traj_primitive_ptr, double lifetime)
+  {
+    visualization_msgs::Marker line_strip_marker;
+    line_strip_marker.ns = "trajectory_candidate";
+    line_strip_marker.header.frame_id = std::string("/world");
+    line_strip_marker.header.stamp = ros::Time().now();
+    line_strip_marker.action = visualization_msgs::Marker::ADD;
+    line_strip_marker.type = visualization_msgs::Marker::LINE_STRIP;
+    line_strip_marker.lifetime = ros::Duration(lifetime);
+    line_strip_marker.id = m_trajectory_candidate_id;
+    ++m_trajectory_candidate_id;
+
+    line_strip_marker.scale.x = 0.01;
+    line_strip_marker.scale.y = 0.01;
+    line_strip_marker.scale.z = 0.01;
+    line_strip_marker.color.a = 0.08;
+    line_strip_marker.color.r = 0.0f;
+    line_strip_marker.color.g = 1.0f;
+    line_strip_marker.color.b = 0.0f;
+
+    geometry_msgs::Point pt;
+    float sample_gap = 0.1f;
+    int n_sample = int(traj_primitive_ptr->m_traj_period_time / sample_gap);
+
+    for (int i = 0; i <= n_sample; ++i){
+      Vector3d result = m_traj_primitive_ptr->getTrajectoryPoint(i*sample_gap, 0);
+      pt.x = result[0];
+      pt.y = result[1];
+      pt.z = result[2];
+      line_strip_marker.points.push_back(pt);
+    }
+    m_trajectory_candidate_markers.markers.push_back(line_strip_marker);
+  }
+
+  void HybridPlannar::initCandidateVisualization()
+  {
+    if (!m_trajectory_candidate_markers.markers.empty())
+      m_trajectory_candidate_markers.markers.clear();
+    m_trajectory_candidate_id = 0;
+  }
+
+  void HybridPlannar::visualizeCandidateTrajectory()
+  {
+    m_pub_snake_traj_candidates_markers.publish(m_trajectory_candidate_markers);
   }
 
   void HybridPlannar::visualizeTrajectory()

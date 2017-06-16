@@ -14,6 +14,8 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <time.h>
 /* math */
 #include <math.h>
 #include <eigen3/Eigen/Core>
@@ -57,6 +59,7 @@ namespace hybrid_plannar{
     ros::Publisher m_pub_tennis_ball_markers;
     ros::Publisher m_pub_tennis_table_markers;
     ros::Publisher m_pub_snake_traj_path;
+    ros::Publisher m_pub_snake_traj_candidates_markers;
 
     /* Topic name */
     std::string m_sub_snake_odom_topic_name;
@@ -87,6 +90,12 @@ namespace hybrid_plannar{
     // todo: static cheat mode
     bool m_tennis_ball_static_hit_mode;
 
+    /* Visualization */
+    bool m_visualize_candidate_flag;
+    visualization_msgs::MarkerArray m_trajectory_candidate_markers;
+    int m_trajectory_candidate_id;
+    int m_visualize_candidate_num;
+
     void snakeInitPose();
     void taskStartCallback(std_msgs::Empty msg);
     void snakeOdomCallback(const nav_msgs::OdometryConstPtr& msg);
@@ -96,6 +105,9 @@ namespace hybrid_plannar{
     void visualizeTennisTable();
     bool getFesibleTrajectory();
     void visualizeTrajectory();
+    void addCandidateTrajectory(MotionPrimitives *traj_primitive_ptr, double lifetime = 0);
+    void initCandidateVisualization();
+    void visualizeCandidateTrajectory();
   };
 }
 #endif
