@@ -325,6 +325,7 @@ namespace hybrid_plannar
     int id = 0;
     visualization_msgs::MarkerArray markers;
     visualization_msgs::Marker tennis_table_marker, tennis_table_net_marker, tennis_table_leg_marker;
+    double tennis_table_offset_z = 0.2;
     tennis_table_marker.ns = "tennis_table";
     tennis_table_marker.header.frame_id = std::string("/world");
     tennis_table_marker.header.stamp = ros::Time().now();
@@ -344,7 +345,7 @@ namespace hybrid_plannar
     ++id;
     tennis_table_marker.pose.position.x = 0.0;
     tennis_table_marker.pose.position.y = -2.93;
-    tennis_table_marker.pose.position.z = 0.755;
+    tennis_table_marker.pose.position.z = 0.755 + tennis_table_offset_z;
     tennis_table_marker.scale.x = 1.48;
     tennis_table_marker.scale.y = 2.7;
     tennis_table_marker.scale.z = 0.15;
@@ -373,7 +374,7 @@ namespace hybrid_plannar
     ++id;
     tennis_table_net_marker.pose.position.x = 0.0;
     tennis_table_net_marker.pose.position.y = -2.93;
-    tennis_table_net_marker.pose.position.z = 0.845;
+    tennis_table_net_marker.pose.position.z = 0.845 + tennis_table_offset_z;
     tennis_table_net_marker.pose.orientation.x = 0.0;
     tennis_table_net_marker.pose.orientation.z = 0.0;
     tennis_table_net_marker.pose.orientation.y = 0.0;
@@ -392,7 +393,7 @@ namespace hybrid_plannar
     ++id;
     tennis_table_leg_marker.pose.position.x = -0.6;
     tennis_table_leg_marker.pose.position.y = -3.98;
-    tennis_table_leg_marker.pose.position.z = 0.385;
+    tennis_table_leg_marker.pose.position.z = 0.385 + tennis_table_offset_z/2.0;
     tennis_table_leg_marker.scale.x = 0.04;
     tennis_table_leg_marker.scale.y = 0.04;
     tennis_table_leg_marker.scale.z = 0.77;
@@ -406,21 +407,21 @@ namespace hybrid_plannar
     ++id;
     tennis_table_leg_marker.pose.position.x = 0.6;
     tennis_table_leg_marker.pose.position.y = -3.98;
-    tennis_table_leg_marker.pose.position.z = 0.385;
+    tennis_table_leg_marker.pose.position.z = 0.385 + tennis_table_offset_z/2.0;
     markers.markers.push_back(tennis_table_leg_marker);
 
     tennis_table_leg_marker.id = id;
     ++id;
     tennis_table_leg_marker.pose.position.x = -0.6;
     tennis_table_leg_marker.pose.position.y = -1.87;
-    tennis_table_leg_marker.pose.position.z = 0.385;
+    tennis_table_leg_marker.pose.position.z = 0.385 + tennis_table_offset_z/2.0;
     markers.markers.push_back(tennis_table_leg_marker);
 
     tennis_table_leg_marker.id = id;
     ++id;
     tennis_table_leg_marker.pose.position.x = 0.6;
     tennis_table_leg_marker.pose.position.y = -1.87;
-    tennis_table_leg_marker.pose.position.z = 0.385;
+    tennis_table_leg_marker.pose.position.z = 0.385 + tennis_table_offset_z/2.0;
     markers.markers.push_back(tennis_table_leg_marker);
 
     m_pub_tennis_table_markers.publish(markers);
