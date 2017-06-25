@@ -7,11 +7,11 @@ namespace snake_command{
     m_nhp.param("pub_joints_ctrl_topic_name", m_pub_joints_ctrl_topic_name, std::string("/hydrus3/joints_ctrl"));
     m_nhp.param("sub_move_start_flag_topic_name", m_sub_move_start_flag_topic_name, std::string("/move_start"));
     m_nhp.param("sub_joint_states_topic_name", m_sub_joint_states_topic_name, std::string("/hydrus3/joint_states"));
-    m_nhp.param("sub_base_link_odom_topic_name", m_sub_base_link_odom_topic_name, std::string("/uav/state"));
+    m_nhp.param("sub_base_link_odom_topic_name", m_sub_base_link_odom_topic_name, std::string("/uav/root_link/odom"));
     m_nhp.param("snake_links_number", m_n_links, 4);
     m_nhp.param("snake_link_length", m_link_length, 0.44);
     m_nhp.param("control_period", m_control_period, 0.05);
-    m_nhp.param("snake_attitude_max_value", m_snake_attitude_max_value, 0.3);
+    m_nhp.param("snake_acceleration_max_value", m_snake_acceleration_max_value, 0.3);
 
     m_move_start_flag = false;
     m_links_pos_ptr = new tf::Vector3[m_n_links + 1];
@@ -113,16 +113,14 @@ namespace snake_command{
       nav_msg.header.frame_id = std::string("/world");
       nav_msg.header.stamp = ros::Time::now();
       nav_msg.header.seq = 1;
-      nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
+      nav_msg.pos_xy_nav_mode = nav_msg.ACC_MODE;
       // todo: set suitable command when finish the trajectory
       tf::Vector3 cur_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
-      tf::Vector3 att = -cur_vel * 1.0 / 9.81;
-      tf::Vector3 att_cog = attitudeCvtWorldToCog(att);
-      att_cog.setMax(tf::Vector3(-m_snake_attitude_max_value, -m_snake_attitude_max_value, -m_snake_attitude_max_value));
-      att_cog.setMin(tf::Vector3(m_snake_attitude_max_value, m_snake_attitude_max_value, m_snake_attitude_max_value));
-      nav_msg.target_att_r = att_cog.getX();
-      nav_msg.target_att_p = att_cog.getY();
-      nav_msg.target_att_y = m_traj_fixed_yaw;
+      tf::Vector3 acc = -cur_vel * 1.0;
+      acc.setMax(tf::Vector3(-m_snake_acceleration_max_value, -m_snake_acceleration_max_value, -m_snake_acceleration_max_value));
+      acc.setMin(tf::Vector3(m_snake_acceleration_max_value, m_snake_acceleration_max_value, m_snake_acceleration_max_value));
+      nav_msg.target_acc_x = acc.getX();
+      nav_msg.target_acc_y = acc.getY();
       nav_msg.pos_z_nav_mode = nav_msg.POS_MODE;
       nav_msg.target_pos_z = m_traj_finish_height;
       m_pub_flight_nav.publish(nav_msg);
@@ -165,17 +163,20 @@ namespace snake_command{
     tf::Vector3 des_vel = des_world_vel + traj_track_p_term + traj_track_i_term;
     tf::Vector3 real_vel(m_base_link_vel.getX(), m_base_link_vel.getY(), m_base_link_vel.getZ());
     tf::Vector3 des_acc = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 2));
-    tf::Vector3 att = (des_acc + (des_vel - real_vel) * 0.5) / 9.81;
+    tf::Vector3 acc = (des_acc + (des_vel - real_vel) * 0.5);
 
     aerial_robot_base::FlightNav nav_msg;
     nav_msg.header.frame_id = std::string("/world");
     nav_msg.header.stamp = ros::Time::now();
     nav_msg.header.seq = 1;
-    nav_msg.pos_xy_nav_mode = nav_msg.ATT_MODE;
-    tf::Vector3 att_cog = attitudeCvtWorldToCog(att);
-    nav_msg.target_att_r = att_cog.getX();
-    nav_msg.target_att_p = att_cog.getY();
-    nav_msg.target_att_y = m_traj_fixed_yaw;
+    nav_msg.pos_xy_nav_mode = nav_msg.ACC_MODE;
+    acc.setMax(tf::Vector3(-m_snake_acceleration_max_value, -m_snake_acceleration_max_value, -m_snake_acceleration_max_value));
+    acc.setMin(tf::Vector3(m_snake_acceleration_max_value, m_snake_acceleration_max_value, m_snake_acceleration_max_value));
+    nav_msg.target_acc_x = acc.getX();
+    nav_msg.target_acc_y = acc.getY();
+    nav_msg.pos_z_nav_mode = nav_msg.POS_MODE;
+    nav_msg.target_pos_z = m_traj_finish_height;
+    m_pub_flight_nav.publish(nav_msg);
     nav_msg.pos_z_nav_mode = nav_msg.POS_MODE;
     nav_msg.target_pos_z = des_world_pos.getZ() - m_traj_control_z_offset;
     m_pub_flight_nav.publish(nav_msg);

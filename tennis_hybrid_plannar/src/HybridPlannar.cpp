@@ -4,7 +4,7 @@ namespace hybrid_plannar
 {
   HybridPlannar::HybridPlannar(ros::NodeHandle nh, ros::NodeHandle nhp): m_nh(nh), m_nhp(nhp)
   {
-    m_nhp.param("sub_snake_odom_topic_name", m_sub_snake_odom_topic_name, std::string("/uav/state"));
+    m_nhp.param("sub_snake_odom_topic_name", m_sub_snake_odom_topic_name, std::string("/uav/root_link/odom"));
     m_nhp.param("sub_tennis_ball_odom_topic_name", m_sub_tennis_ball_odom_topic_name, std::string("/gazebo_ping_pong_ball_odom_1"));
     m_nhp.param("pub_snake_start_flag", m_pub_snake_start_flag_topic_name, std::string("/teleop_command/start"));
     m_nhp.param("pub_snake_takeoff_flag", m_pub_snake_takeoff_flag_topic_name, std::string("/teleop_command/takeoff"));
