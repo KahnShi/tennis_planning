@@ -11,7 +11,7 @@ namespace snake_command{
     m_nhp.param("snake_links_number", m_n_links, 4);
     m_nhp.param("snake_link_length", m_link_length, 0.44);
     m_nhp.param("control_period", m_control_period, 0.05);
-    m_nhp.param("snake_acceleration_max_value", m_snake_acceleration_max_value, 0.3);
+    m_nhp.param("snake_acceleration_max_value", m_snake_acceleration_max_value, 3.0);
 
     m_move_start_flag = false;
     m_links_pos_ptr = new tf::Vector3[m_n_links + 1];
