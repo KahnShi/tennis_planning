@@ -12,6 +12,7 @@ namespace snake_command{
     m_nhp.param("snake_link_length", m_link_length, 0.44);
     m_nhp.param("control_period", m_control_period, 0.05);
     m_nhp.param("snake_acceleration_max_value", m_snake_acceleration_max_value, 3.0);
+    m_nhp.param("visualize_expected_position_flag", m_visualize_expected_position_flag, true);
 
     m_move_start_flag = false;
     m_links_pos_ptr = new tf::Vector3[m_n_links + 1];
@@ -150,7 +151,8 @@ namespace snake_command{
     tf::Vector3 des_world_vel = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 1));
     tf::Vector3 des_world_pos = vector3dToVector3(m_traj_primitive->getTrajectoryPoint(current_traj_time, 0)) + m_racket_1_base_link_offset;
     /* Visualization for expected racket position */
-    visualizeRacketExpectedPosition(des_world_pos - m_racket_1_base_link_offset);
+    if (m_visualize_expected_position_flag)
+      visualizeRacketExpectedPosition(des_world_pos - m_racket_1_base_link_offset);
     tf::Vector3 real_world_pos;
     real_world_pos = m_links_pos_ptr[1];
 

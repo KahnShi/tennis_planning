@@ -2,5 +2,6 @@
   <arg name="tennis_ball_static_hit_mode" default="True" />
   <node pkg="tennis_hybrid_plannar" type="hybrid_plannar_node" name="hybrid_plannar_node" output="screen">
     <param name="tennis_ball_static_hit_mode" value="$(arg tennis_ball_static_hit_mode)" />
+    <param name="visualize_expected_position_flag" value="true" />
   </node>
 </launch>

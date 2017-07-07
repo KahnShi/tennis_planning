@@ -78,6 +78,7 @@ namespace snake_command{
     static constexpr uint8_t TRAJ_TRACK_FINISH = 3;
     double m_traj_finish_height;
     double m_traj_control_z_offset;
+    bool m_visualize_expected_position_flag;
 
     /* tennis */
     tf::Vector3 m_racket_1_pos;
